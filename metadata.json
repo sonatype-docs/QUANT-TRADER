@@ -1,0 +1,6 @@
+{
+  "name": "QuantKit",
+  "description": "Systematic algorithmic trading terminal with live execution, dynamic bracket ladders, Monte Carlo simulation, and automated risk watchdog.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
