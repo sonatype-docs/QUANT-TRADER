@@ -5,11 +5,13 @@ from ._helpers import sample_request
 def test_health():
     assert TestClient(app).get("/health").status_code == 200
 
-def test_create_and_fetch_backtest():
+def test_create_and_fetch_backtest(monkeypatch):
+    monkeypatch.setenv("QUANT_ENGINE_API_KEY", "test-key")
     client = TestClient(app)
-    created = client.post("/v1/research/backtests", json=sample_request().model_dump(mode="json"))
+    headers = {"X-API-Key": "test-key"}
+    created = client.post("/v1/research/backtests", json=sample_request().model_dump(mode="json"), headers=headers)
     assert created.status_code == 201
     run_id = created.json()["run_id"]
-    fetched = client.get(f"/v1/research/backtests/{run_id}")
+    fetched = client.get("/v1/research/backtests/" + run_id, headers=headers)
     assert fetched.status_code == 200
     assert fetched.json()["run_id"] == run_id
