@@ -35,8 +35,8 @@ def walk_forward(
     test_bars: int,
     step_bars: int | None = None,
 ) -> list[WalkForwardWindow]:
-    if train_bars < 30 or test_bars < 1:
-        raise ValueError("train_bars must be >= 30 and test_bars must be >= 1")
+    if train_bars < 30 or test_bars < 30:
+        raise ValueError("train_bars and test_bars must both be >= 30 for the current strategy lookback")
     step = step_bars or test_bars
     if step < 1:
         raise ValueError("step_bars must be >= 1")
