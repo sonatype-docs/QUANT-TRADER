@@ -1,0 +1,69 @@
+name: Quant Engine Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "quant-engine/**"
+      - "infra/quant-engine-stack.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-south-1
+  STACK_NAME: quant-trader-research
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ensure infrastructure exists
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/quant-engine-stack.yml \
+            --stack-name "$STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides DesiredCount=0
+
+      - name: Resolve ECR repository
+        id: ecr
+        run: |
+          echo "uri=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ECRRepository'].OutputValue" --output text)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        env:
+          ECR_URI: ${{ steps.ecr.outputs.uri }}
+        run: |
+          docker build -t "$ECR_URI:${GITHUB_SHA}" quant-engine
+          docker push "$ECR_URI:${GITHUB_SHA}"
+
+      - name: Deploy service
+        env:
+          ECR_URI: ${{ steps.ecr.outputs.uri }}
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/quant-engine-stack.yml \
+            --stack-name "$STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides ContainerImage="$ECR_URI:${GITHUB_SHA}" DesiredCount=1
+
+      - name: Smoke test
+        run: |
+          URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuantEngineUrl'].OutputValue" --output text)
+          for i in {1..30}; do
+            if curl --fail --silent "http://$URL/health"; then exit 0; fi
+            sleep 10
+          done
+          exit 1
