@@ -176,6 +176,7 @@ object VirtualForwardTestingEngine {
             _virtualAccount.value = acc.copy(
                 currentBalance = acc.currentBalance + balanceAdjustment,
                 realizedPnl = acc.realizedPnl + balanceAdjustment,
+                unrealizedPnl = 0.0,
                 totalTradesExecuted = acc.totalTradesExecuted + 1,
                 winTradesCount = if (balanceAdjustment > 0) acc.winTradesCount + 1 else acc.winTradesCount,
                 lossTradesCount = if (balanceAdjustment < 0) acc.lossTradesCount + 1 else acc.lossTradesCount,
@@ -273,6 +274,7 @@ object VirtualForwardTestingEngine {
                 _virtualAccount.value = acc.copy(
                     currentBalance = acc.currentBalance + pnl,
                     realizedPnl = acc.realizedPnl + pnl,
+                    unrealizedPnl = 0.0,
                     totalTradesExecuted = acc.totalTradesExecuted + 1,
                     winTradesCount = if (pnl >= 0) acc.winTradesCount + 1 else acc.winTradesCount,
                     lossTradesCount = if (pnl < 0) acc.lossTradesCount + 1 else acc.lossTradesCount,
@@ -303,6 +305,7 @@ object VirtualForwardTestingEngine {
         _virtualAccount.value = acc.copy(
             currentBalance = acc.currentBalance + totalClosedPnl,
             realizedPnl = acc.realizedPnl + totalClosedPnl,
+            unrealizedPnl = 0.0,
             totalTradesExecuted = acc.totalTradesExecuted + closedCount,
             activeOrdersCount = 0
         )
