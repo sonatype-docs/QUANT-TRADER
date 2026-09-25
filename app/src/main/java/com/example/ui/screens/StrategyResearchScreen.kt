@@ -85,7 +85,7 @@ fun StrategyResearchScreen(
     var p4 by remember(currentStrategy.id) { mutableFloatStateOf(currentStrategy.param4Default) }
     var p5 by remember(currentStrategy.id) { mutableFloatStateOf(currentStrategy.param5Default) }
 
-    // Dynamic backtest computation
+    // Legacy catalogue estimate; authoritative metrics come from the Quant Research backend
     val dynamicStats = remember(currentStrategy.id, p1, p2, p3, p4, p5) {
         StrategyCatalog.calculateDynamicImpact(currentStrategy, p1, p2, p3, p4, p5)
     }
@@ -124,7 +124,7 @@ fun StrategyResearchScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Real-time parameter tuning • 8 Quant models • Live impact",
+                        text = "8 Quant models • server-side backtest required • legacy catalogue metrics",
                         color = colors.textSecondary,
                         fontSize = 11.sp
                     )
