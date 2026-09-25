@@ -56,6 +56,11 @@ android {
     compose = true
     buildConfig = true
   }
+
+  val quantEngineBaseUrl = System.getenv("QUANT_ENGINE_BASE_URL") ?: "http://10.0.2.2:8080"
+  defaultConfig {
+    buildConfigField("String", "QUANT_ENGINE_BASE_URL", "\"" + quantEngineBaseUrl + "\"")
+  }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {
     includeInApk = false

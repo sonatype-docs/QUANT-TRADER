@@ -6,13 +6,14 @@ data class VirtualAccount(
     val initialBalance: Double = 25000.0,
     val currentBalance: Double = 25000.0,
     val realizedPnl: Double = 0.0,
+    val unrealizedPnl: Double = 0.0,
     val activeOrdersCount: Int = 0,
     val totalTradesExecuted: Int = 0,
     val winTradesCount: Int = 0,
     val lossTradesCount: Int = 0
 ) {
-    val totalEquity: Double get() = currentBalance
-    val roiPct: Double get() = if (initialBalance > 0) ((currentBalance - initialBalance) / initialBalance) * 100.0 else 0.0
+    val totalEquity: Double get() = currentBalance + unrealizedPnl
+    val roiPct: Double get() = if (initialBalance > 0) ((totalEquity - initialBalance) / initialBalance) * 100.0 else 0.0
 }
 
 data class VirtualOrder(

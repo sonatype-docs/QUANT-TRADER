@@ -24,6 +24,7 @@ import com.example.ui.screens.ComparatorLabScreen
 import com.example.ui.screens.FleetDashboardScreen
 import com.example.ui.screens.ForwardTestingScreen
 import com.example.ui.screens.StrategyResearchScreen
+import com.example.ui.screens.QuantResearchScreen
 import com.example.ui.screens.WatchdogRiskScreen
 import com.example.ui.theme.LocalQuantKitColors
 import com.example.ui.theme.MyApplicationTheme
@@ -115,6 +116,11 @@ fun QuantKitApp(
                     }
                     QuantKitTab.WATCHDOG -> {
                         WatchdogRiskScreen(
+                            onToggleTheme = onToggleTheme
+                        )
+                    }
+                    QuantKitTab.RESEARCH -> {
+                        QuantResearchScreen(
                             onToggleTheme = onToggleTheme
                         )
                     }

@@ -19,12 +19,14 @@ import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.CandlestickChart
 import androidx.compose.material.icons.outlined.Radar
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,7 +50,8 @@ enum class QuantKitTab(
     FORWARD("Forward", Icons.Filled.CandlestickChart, Icons.Outlined.CandlestickChart),
     LAB("Lab", Icons.Filled.Science, Icons.Outlined.Science),
     STRATEGY("Strategy", Icons.Filled.Tune, Icons.Outlined.Tune),
-    WATCHDOG("Watchdog", Icons.Filled.Radar, Icons.Outlined.Radar)
+    WATCHDOG("Watchdog", Icons.Filled.Radar, Icons.Outlined.Radar),
+    RESEARCH("Research", Icons.Filled.Science, Icons.Outlined.Science)
 }
 
 @Composable
