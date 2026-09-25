@@ -29,6 +29,16 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
+  QuantEngineSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Runtime secret for the QUANT-TRADER research API
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: api_key
+        PasswordLength: 48
+        ExcludePunctuation: true
+
   ResearchQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -197,6 +207,10 @@ Resources:
                   - !GetAtt DataBucket.Arn
                   - !Join ['', [!GetAtt DataBucket.Arn, '/*']]
               - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref QuantEngineSecret
+              - Effect: Allow
                 Action: [sqs:SendMessage, sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
                 Resource: !GetAtt ResearchQueue.Arn
 
@@ -225,6 +239,9 @@ Resources:
               Value: !Ref DataBucket
             - Name: RESEARCH_QUEUE_URL
               Value: !Ref ResearchQueue
+          Secrets:
+            - Name: QUANT_ENGINE_API_KEY
+              ValueFrom: !Join ['', [!Ref QuantEngineSecret, ':api_key::']]
           LogConfiguration:
             LogDriver: awslogs
             Options:
