@@ -2,11 +2,6 @@ name: Quant Engine Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches: ["main"]
-    paths:
-      - "quant-engine/**"
-      - "infra/quant-engine-stack.yml"
 
 permissions:
   contents: read
