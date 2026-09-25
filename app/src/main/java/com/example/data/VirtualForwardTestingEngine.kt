@@ -170,7 +170,12 @@ object VirtualForwardTestingEngine {
 
         _orders.value = updatedOrders
         syncActiveRunners(updatedOrders)
-        $equityLine
+        val unrealized = updatedOrders.filter { it.status == VirtualOrderStatus.OPEN }.sumOf { it.unrealizedPnl }
+        val currentAcc = _virtualAccount.value
+        _virtualAccount.value = currentAcc.copy(
+            activeOrdersCount = updatedOrders.count { it.status == VirtualOrderStatus.OPEN },
+            unrealizedPnl = unrealized
+        )
         if (balanceAdjustment != 0.0) {
             val acc = _virtualAccount.value
             _virtualAccount.value = acc.copy(
