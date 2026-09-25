@@ -3,8 +3,10 @@ import os
 from fastapi import FastAPI, HTTPException, Header
 from .engine import run_backtest
 from .models import BacktestRequest, BacktestResult
+from .research import parameter_sweep, walk_forward
+from .strategy_registry import get_strategy, list_strategies
 
-app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.1.0")
+app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.2.0")
 _RESULTS = {}
 
 def _require_api_key(api_key: str | None):
@@ -18,11 +20,16 @@ def _require_api_key(api_key: str | None):
 def health():
     return {"status": "ok", "service": "quant-engine", "time": datetime.now(timezone.utc).isoformat()}
 
+@app.get("/v1/research/strategies")
+def strategies(x_api_key: str | None = Header(default=None)):
+    _require_api_key(x_api_key)
+    return [{"strategy_id": item.strategy_id, "name": item.name, "description": item.description} for item in list_strategies()]
+
 @app.post("/v1/research/backtests", response_model=BacktestResult, status_code=201)
 def create_backtest(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
     try:
-        result = run_backtest(request)
+        result = get_strategy(request.strategy_id).runner(request)
         _RESULTS[result.run_id] = result
         return result
     except (ValueError, OverflowError, ZeroDivisionError) as exc:
@@ -35,3 +42,22 @@ def get_backtest(run_id: str, x_api_key: str | None = Header(default=None)):
     if result is None:
         raise HTTPException(status_code=404, detail="Backtest run not found")
     return result
+
+
+@app.post("/v1/research/sweeps")
+def create_sweep(request: BacktestRequest, parameter_grid: dict[str, list[float]], x_api_key: str | None = Header(default=None)):
+    _require_api_key(x_api_key)
+    get_strategy(request.strategy_id)
+    return parameter_sweep(request, parameter_grid)
+
+@app.post("/v1/research/walk-forward")
+def create_walk_forward(
+    request: BacktestRequest,
+    train_bars: int,
+    test_bars: int,
+    step_bars: int | None = None,
+    x_api_key: str | None = Header(default=None),
+):
+    _require_api_key(x_api_key)
+    get_strategy(request.strategy_id)
+    return walk_forward(request, train_bars, test_bars, step_bars)
