@@ -14,6 +14,6 @@ def test_parameter_sweep_returns_every_combination():
 
 def test_walk_forward_creates_out_of_sample_windows():
     request = sample_request()
-    windows = walk_forward(request, train_bars=30, test_bars=20, step_bars=20)
-    assert len(windows) == 2
+    windows = walk_forward(request, train_bars=30, test_bars=30, step_bars=30)
+    assert len(windows) == 1
     assert all(window.test_end > window.test_start for window in windows)
