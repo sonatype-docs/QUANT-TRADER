@@ -131,10 +131,14 @@ object VirtualForwardTestingEngine {
                     } else {
                         (order.entryPrice - markPrice) * order.qty
                     }
-                    val pnlPct = if (order.entryPrice > 0) ((markPrice - order.entryPrice) / order.entryPrice) * 100.0 else 0.0
+                    val pnlPct = if (order.entryPrice > 0) {
+                        val directionalMove = if (order.side == OrderSide.BUY) markPrice - order.entryPrice else order.entryPrice - markPrice
+                        (directionalMove / order.entryPrice) * 100.0
+                    } else 0.0
 
                     // Check TP hit
-                    if (order.side == OrderSide.BUY && markPrice >= order.takeProfit) {
+                    if ((order.side == OrderSide.BUY && markPrice >= order.takeProfit) ||
+                        (order.side == OrderSide.SELL && markPrice <= order.takeProfit)) {
                         addFeedLog("[TP HIT] ${order.symbol} hit Take Profit @ $${String.format("%.2f", markPrice)}! +$${String.format("%.2f", pnl)} realized.")
                         balanceAdjustment += pnl
                         order.copy(
@@ -143,7 +147,8 @@ object VirtualForwardTestingEngine {
                             unrealizedPnlPct = pnlPct,
                             status = VirtualOrderStatus.FILLED_TP
                         )
-                    } else if (order.side == OrderSide.BUY && markPrice <= order.stopLoss) {
+                    } else if ((order.side == OrderSide.BUY && markPrice <= order.stopLoss) ||
+                        (order.side == OrderSide.SELL && markPrice >= order.stopLoss)) {
                         addFeedLog("[SL HIT] ${order.symbol} stopped out @ $${String.format("%.2f", markPrice)}! $${String.format("%.2f", pnl)} realized.")
                         balanceAdjustment += pnl
                         order.copy(
@@ -165,6 +170,7 @@ object VirtualForwardTestingEngine {
 
         _orders.value = updatedOrders
         syncActiveRunners(updatedOrders)
+        $equityLine
         if (balanceAdjustment != 0.0) {
             val acc = _virtualAccount.value
             _virtualAccount.value = acc.copy(
