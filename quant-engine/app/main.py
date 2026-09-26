@@ -5,6 +5,7 @@ from .engine import run_backtest
 from .models import BacktestRequest, BacktestResult
 from .research import parameter_sweep, walk_forward
 from .strategy_registry import get_strategy, list_strategies
+from .strategy_backtest import run_strategy_backtest
 
 app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.2.0")
 _RESULTS = {}
@@ -29,7 +30,7 @@ def strategies(x_api_key: str | None = Header(default=None)):
 def create_backtest(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
     try:
-        result = get_strategy(request.strategy_id).runner(request)
+        result = run_strategy_backtest(request)
         _RESULTS[result.run_id] = result
         return result
     except (ValueError, OverflowError, ZeroDivisionError) as exc:
