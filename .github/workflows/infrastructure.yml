@@ -1,0 +1,20 @@
+name: Infrastructure Validation
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/quant-engine-deploy.yml"
+      - ".github/workflows/infrastructure.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2
+      - name: Validate CloudFormation template
+        run: sam validate --template-file infra/quant-engine-stack.yml
