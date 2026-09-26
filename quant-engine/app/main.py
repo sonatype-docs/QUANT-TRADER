@@ -9,6 +9,7 @@ from .strategy_backtest import run_strategy_backtest
 from .jobs import InMemoryJobStore
 from .auth import require_auth
 from .data_store import resolve_bars
+from .analysis_pipeline import AnalysisRequest
 _JOBS = InMemoryJobStore()
 
 def _job_store():
@@ -101,3 +102,15 @@ def get_research_job_result(job_id: str, authorization: str | None = Header(defa
     if not bucket:
         raise HTTPException(status_code=503, detail="research result bucket is not configured")
     return S3ResultStore(bucket).get(job.result_s3_key)
+
+@app.post("/v1/analysis/jobs", status_code=202)
+def create_analysis_job(request: AnalysisRequest, authorization: str | None = Header(default=None), x_api_key: str | None = Header(default=None)):
+    _require_auth(authorization, x_api_key)
+    if not os.getenv("BEDROCK_MODEL_ID"):
+        raise HTTPException(status_code=503, detail="BEDROCK_MODEL_ID is not configured")
+    job = _job_store().create("analysis_pipeline", request.model_dump(mode="json"))
+    if not os.getenv("RESEARCH_QUEUE_URL"):
+        raise HTTPException(status_code=503, detail="research queue is not configured")
+    from .research_dispatch import ResearchDispatcher
+    message_id = ResearchDispatcher(os.environ["RESEARCH_QUEUE_URL"]).dispatch(job)
+    return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at, "message_id": message_id}
