@@ -18,9 +18,6 @@ Parameters:
   BedrockModelArn:
     Type: String
     Default: '*'
-  BedrockModelArn:
-    Type: String
-    Default: '*'
 
 Resources:
   QuantUserPool:

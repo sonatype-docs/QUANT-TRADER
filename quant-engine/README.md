@@ -1,35 +1,40 @@
-QUANT-TRADER Quant Engine
+# QUANT-TRADER Quant Engine
 
-This is the first production migration boundary: Android remains the cockpit while research/backtesting becomes a server-side source of truth.
+The quant engine is the server-side research and execution-safety component of the existing QUANT-TRADER product. It lives inside the same repository as the Android cockpit.
 
-API:
-- GET /health
-- POST /v1/research/backtests
-- GET /v1/research/backtests/{run_id}
+## Implemented capabilities
 
-The baseline engine is deterministic and cost-aware. It consumes explicit OHLCV bars and records fees/slippage in every trade. UI code must not manufacture Sharpe, profit factor, drawdown, or return values.
+- FastAPI research API with Cognito authentication and development API-key fallback.
+- Deterministic baseline and executable strategy backtesting for the strategy registry.
+- Canonical OHLCV validation, S3/Parquet datasets, dataset manifests, fingerprints, and provenance.
+- Parameter sweeps and walk-forward research.
+- Pair/cointegration research with explicit hedge-ratio orientation.
+- L2/order-flow primitives, deterministic replay, CVD, imbalance, absorption, and order-flow strategy rules.
+- Durable asynchronous research jobs backed by DynamoDB + SQS + ECS workers.
+- S3 result persistence and a result retrieval API.
+- Structured five-stage Bedrock analyst pipeline with persisted results.
+- Paper/live execution risk boundary. Live broker execution is intentionally blocked until an explicit broker adapter exists.
+- AWS deployment via the root repository's CloudFormation stack and GitHub Actions.
 
-Next phases:
-1. PostgreSQL metadata/results and S3/Parquet market data.
-2. Strategy adapters for the existing catalogue.
-3. Walk-forward, Monte Carlo, parameter sweeps and provenance hashes.
-4. L2/order-flow ingestion and event-driven execution simulation.
-5. SQS plus ECS/Batch for long research jobs.
-6. Authentication and production observability.
+## API
 
+- GET `/health`
+- GET `/v1/research/strategies`
+- POST `/v1/research/backtests`
+- GET `/v1/research/backtests/{run_id}`
+- POST `/v1/research/sweeps`
+- POST `/v1/research/walk-forward`
+- POST `/v1/research/jobs`
+- GET `/v1/research/jobs/{job_id}`
+- GET `/v1/research/jobs/{job_id}/result`
+- POST `/v1/analysis/jobs`
 
-## Phase 2 capabilities
+## Product boundary
 
-- Canonical OHLCV validation and Parquet read/write.
-- Local and S3 dataset-store boundaries using the same interface.
-- Dataset/request SHA-256 fingerprints on every backtest result.
-- Explicit strategy registry for the eight catalogue strategy IDs. The registry is a migration contract; it does not claim that all eight strategies are fully implemented yet.
-- Parameter sweeps and walk-forward out-of-sample windows.
-- PostgreSQL schema for durable research-run metadata.
-- JSON-safe metrics; infinite profit factor is represented as null when there are wins but no losses.
+Android remains the cockpit. Long-running research and analysis execute server-side so UI code does not manufacture research metrics.
 
-## Phase 11 analyst pipeline
+Production flow:
 
-The research worker can now run a structured five-stage Bedrock analysis job: market-research analyst, sentiment analyst, and technical analyst execute in parallel; risk synthesis and trade-plan synthesis then reconcile their outputs. The pipeline uses Bedrock Converse structured JSON output, explicit token limits, adaptive retries, and persists the result in S3 through the same durable job lifecycle.
+Android → Cognito → API → DynamoDB/SQS → ECS worker → S3 result → Android.
 
-The model is configured with BEDROCK_MODEL_ID. The infrastructure currently defaults to a global Claude Sonnet 4.6 inference profile ID; verify model access and IAM scope before production use.
+The engine is deliberately an in-repository module rather than a separate repository.
