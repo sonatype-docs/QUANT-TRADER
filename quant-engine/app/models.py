@@ -20,7 +20,8 @@ class BacktestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     symbol: str = Field(min_length=1, max_length=32)
     strategy_id: str = Field(min_length=1, max_length=128)
-    bars: list[Bar] = Field(min_length=30)
+    bars: list[Bar] = Field(default_factory=list, min_length=0)
+    dataset_s3_uri: str | None = None
     initial_capital: float = Field(default=25_000, gt=0)
     risk_per_trade: float = Field(default=0.01, gt=0, lt=1)
     fee_bps: float = Field(default=4.0, ge=0)

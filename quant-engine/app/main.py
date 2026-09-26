@@ -8,6 +8,7 @@ from .strategy_registry import get_strategy, list_strategies
 from .strategy_backtest import run_strategy_backtest
 from .jobs import InMemoryJobStore
 from .auth import require_auth
+from .data_store import resolve_bars
 _JOBS = InMemoryJobStore()
 
 def _job_store():
@@ -35,7 +36,7 @@ def strategies(authorization: str | None = Header(default=None), x_api_key: str 
 def create_backtest(request: BacktestRequest, authorization: str | None = Header(default=None), x_api_key: str | None = Header(default=None)):
     _require_auth(authorization, x_api_key)
     try:
-        result = run_strategy_backtest(request)
+        result = run_strategy_backtest(resolve_bars(request))
         _RESULTS[result.run_id] = result
         return result
     except (ValueError, OverflowError, ZeroDivisionError) as exc:
@@ -71,6 +72,7 @@ def create_walk_forward(
 @app.post("/v1/research/jobs", status_code=202)
 def create_research_job(request: BacktestRequest, authorization: str | None = Header(default=None), x_api_key: str | None = Header(default=None)):
     _require_auth(authorization, x_api_key)
+    request = resolve_bars(request)
     job = _job_store().create("backtest", request.model_dump(mode="json"))
     if os.getenv("RESEARCH_QUEUE_URL"):
         from .research_dispatch import ResearchDispatcher
