@@ -7,6 +7,13 @@ from .research import parameter_sweep, walk_forward
 from .strategy_registry import get_strategy, list_strategies
 from .strategy_backtest import run_strategy_backtest
 from .jobs import InMemoryJobStore
+_JOBS = InMemoryJobStore()
+
+def _job_store():
+    if os.getenv("RESEARCH_JOB_TABLE"):
+        from .aws_jobs import DynamoJobStore
+        return DynamoJobStore()
+    return _JOBS
 
 app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.2.0")
 _RESULTS = {}
@@ -68,13 +75,17 @@ def create_walk_forward(
 @app.post("/v1/research/jobs", status_code=202)
 def create_research_job(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
-    job = _JOBS.create("backtest", request.model_dump(mode="json"))
+    job = _job_store().create("backtest", request.model_dump(mode="json"))
+    if os.getenv("RESEARCH_QUEUE_URL"):
+        from .research_dispatch import ResearchDispatcher
+        message_id = ResearchDispatcher(os.environ["RESEARCH_QUEUE_URL"]).dispatch(job)
+        return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at, "message_id": message_id}
     return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at}
 
 @app.get("/v1/research/jobs/{job_id}")
 def get_research_job(job_id: str, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
-    job = _JOBS.get(job_id)
+    job = _job_store().get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
     return job

@@ -39,6 +39,23 @@ Resources:
         PasswordLength: 48
         ExcludePunctuation: true
 
+  ResearchJobTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub "${AWS::StackName}-research-jobs"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: job_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: job_id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
   ResearchDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -230,7 +247,10 @@ Resources:
                 Resource: !Ref QuantEngineSecret
               - Effect: Allow
                 Action: [sqs:SendMessage, sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
-                Resource: !GetAtt ResearchQueue.Arn
+                Resource: [!GetAtt ResearchQueue.Arn, !GetAtt ResearchDLQ.Arn]
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
+                Resource: !GetAtt ResearchJobTable.Arn
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -257,6 +277,8 @@ Resources:
               Value: !Ref DataBucket
             - Name: RESEARCH_QUEUE_URL
               Value: !Ref ResearchQueue
+            - Name: RESEARCH_JOB_TABLE
+              Value: !Ref ResearchJobTable
           Secrets:
             - Name: QUANT_ENGINE_API_KEY
               ValueFrom: !Join ['', [!Ref QuantEngineSecret, ':api_key::']]
@@ -290,6 +312,50 @@ Resources:
         - ContainerName: quant-engine
           ContainerPort: 8080
           TargetGroupArn: !Ref TargetGroup
+
+  WorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+
+  WorkerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: quant-engine-worker
+          Image: !Ref ContainerImage
+          Essential: true
+          Command: ["python", "-m", "quant_engine.app.worker_main"]
+          Environment:
+            - Name: RESEARCH_QUEUE_URL
+              Value: !Ref ResearchQueue
+            - Name: RESEARCH_RESULTS_BUCKET
+              Value: !Ref DataBucket
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref WorkerLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: worker
+
+  WorkerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 0
+      LaunchType: FARGATE
+      TaskDefinition: !Ref WorkerTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups: [!Ref ServiceSecurityGroup]
+          Subnets: [!Ref PublicSubnetA, !Ref PublicSubnetB]
 
 Outputs:
   QuantEngineUrl:
