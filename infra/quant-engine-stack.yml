@@ -283,6 +283,10 @@ Resources:
               - Effect: Allow
                 Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
                 Resource: !GetAtt ResearchJobTable.Arn
+              - Effect: Allow
+                Action: [bedrock:InvokeModel]
+                Resource: !Ref BedrockModelArn
+                Sid: BedrockInvoke
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -317,6 +321,8 @@ Resources:
               Value: !Ref QuantUserPool
             - Name: COGNITO_APP_CLIENT_ID
               Value: !Ref QuantUserPoolClient
+            - Name: BEDROCK_MODEL_ID
+              Value: global.anthropic.claude-sonnet-4-6
           Secrets:
             - Name: QUANT_ENGINE_API_KEY
               ValueFrom: !Join ['', [!Ref QuantEngineSecret, ':api_key::']]
@@ -375,6 +381,8 @@ Resources:
               Value: !Ref ResearchQueue
             - Name: RESEARCH_RESULTS_BUCKET
               Value: !Ref DataBucket
+            - Name: BEDROCK_MODEL_ID
+              Value: global.anthropic.claude-sonnet-4-6
           LogConfiguration:
             LogDriver: awslogs
             Options:

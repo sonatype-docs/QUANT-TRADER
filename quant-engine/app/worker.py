@@ -6,6 +6,7 @@ from .models import BacktestRequest
 from .s3_results import S3ResultStore
 from .jobs import JobStatus
 from .data_store import resolve_bars
+from .analysis_pipeline import AnalysisPipeline, AnalysisRequest
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +20,22 @@ def execute_job(message: dict, result_store: S3ResultStore, job_store=None) -> s
 
     try:
         job_type = message["job_type"]
-        if job_type != "backtest":
+        if job_type == "backtest":
+            request = resolve_bars(BacktestRequest.model_validate(message["payload"]))
+            result = run_strategy_backtest(request)
+            result_key = result_store.put(result)
+            result_run_id = result.run_id
+        elif job_type == "analysis_pipeline":
+            result = __import__("asyncio").run(AnalysisPipeline().run(AnalysisRequest.model_validate(message["payload"])))
+            result_run_id = result.pipeline_id
+            result_key = result_store.put_json(result_run_id, result.model_dump(mode="json"))
+        else:
             raise ValueError(f"unsupported job_type: {job_type}")
-        request = resolve_bars(BacktestRequest.model_validate(message["payload"]))
-        result = run_strategy_backtest(request)
-        result_key = result_store.put(result)
         if job_store is not None:
             job_store.update(
                 job,
                 status=JobStatus.SUCCEEDED,
-                result_run_id=result.run_id,
+                result_run_id=result_run_id,
                 result_s3_key=result_key,
                 error=None,
             )
