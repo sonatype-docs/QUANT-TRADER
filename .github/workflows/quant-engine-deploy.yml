@@ -1,6 +1,12 @@
 name: Quant Engine Deploy
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "quant-engine/**"
+      - "infra/quant-engine-stack.yml"
+      - ".github/workflows/quant-engine-deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,52 +20,86 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v5
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Ensure infrastructure exists
+      - name: Validate CloudFormation
         run: |
-          aws cloudformation validate-template --template-body file://infra/quant-engine-stack.yml
+          aws cloudformation validate-template \
+            --template-body file://infra/quant-engine-stack.yml
+
+      - name: Bootstrap infrastructure
+        run: |
           aws cloudformation deploy \
             --template-file infra/quant-engine-stack.yml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides ContainerImage=public.ecr.aws/docker/library/python:3.12-slim DesiredCount=0 WorkerDesiredCount=1
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ContainerImage=public.ecr.aws/docker/library/python:3.12-slim \
+              DesiredCount=0 \
+              WorkerDesiredCount=0
 
       - name: Resolve ECR repository
         id: ecr
+        shell: bash
         run: |
-          echo "uri=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ECRRepository'].OutputValue" --output text)" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          URI="$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='ECRRepository'].OutputValue" \
+            --output text)"
+          test -n "$URI" && test "$URI" != "None"
+          echo "uri=$URI" >> "$GITHUB_OUTPUT"
 
-      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push
+      - name: Build and push image
         env:
           ECR_URI: ${{ steps.ecr.outputs.uri }}
         run: |
-          docker build -t "$ECR_URI:${GITHUB_SHA}" quant-engine
-          docker push "$ECR_URI:${GITHUB_SHA}"
+          set -euo pipefail
+          docker build --pull -t "$ECR_URI:$GITHUB_SHA" quant-engine
+          docker push "$ECR_URI:$GITHUB_SHA"
 
-      - name: Deploy service
+      - name: Deploy application
         env:
           ECR_URI: ${{ steps.ecr.outputs.uri }}
         run: |
+          set -euo pipefail
           aws cloudformation deploy \
             --template-file infra/quant-engine-stack.yml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides ContainerImage="$ECR_URI:${GITHUB_SHA}" DesiredCount=1 WorkerDesiredCount=1
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ContainerImage="$ECR_URI:$GITHUB_SHA" \
+              DesiredCount=1 \
+              WorkerDesiredCount=1
 
       - name: Smoke test
+        shell: bash
         run: |
-          URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuantEngineUrl'].OutputValue" --output text)
+          set -euo pipefail
+          URL="$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='QuantEngineUrl'].OutputValue" \
+            --output text)"
+          test -n "$URL" && test "$URL" != "None"
           for i in {1..30}; do
-            if curl --fail --silent "http://$URL/health"; then exit 0; fi
+            if curl --fail --silent --show-error --max-time 10 "http://$URL/health"; then
+              exit 0
+            fi
             sleep 10
           done
+          echo "Health check failed for http://$URL/health" >&2
           exit 1
