@@ -1,0 +1,60 @@
+from __future__ import annotations
+from datetime import datetime, timezone
+from typing import Any
+import json
+import os
+from .jobs import JobStatus, ResearchJob
+
+class DynamoJobStore:
+    def __init__(self, table_name: str | None = None):
+        import boto3
+        self.table_name = table_name or os.environ["RESEARCH_JOB_TABLE"]
+        self.client = boto3.resource("dynamodb").Table(self.table_name)
+
+    def create(self, job_type: str, payload: dict[str, Any]) -> ResearchJob:
+        from uuid import uuid4
+        now = datetime.now(timezone.utc)
+        job = ResearchJob(f"job_{uuid4().hex}", job_type, payload, created_at=now, updated_at=now)
+        self.client.put_item(Item={
+            "job_id": job.job_id,
+            "job_type": job.job_type,
+            "payload": json.dumps(job.payload, separators=(",", ":")),
+            "status": job.status.value,
+            "created_at": job.created_at.isoformat(),
+            "updated_at": job.updated_at.isoformat(),
+        })
+        return job
+
+    def get(self, job_id: str) -> ResearchJob | None:
+        response = self.client.get_item(Key={"job_id": job_id})
+        item = response.get("Item")
+        if not item:
+            return None
+        return ResearchJob(
+            job_id=item["job_id"],
+            job_type=item["job_type"],
+            payload=json.loads(item["payload"]),
+            status=JobStatus(item["status"]),
+            result_run_id=item.get("result_run_id"),
+            error=item.get("error"),
+            created_at=datetime.fromisoformat(item["created_at"]),
+            updated_at=datetime.fromisoformat(item["updated_at"]),
+        )
+
+    def update(self, job: ResearchJob, **changes) -> ResearchJob:
+        for key, value in changes.items():
+            setattr(job, key, value)
+        job.updated_at = datetime.now(timezone.utc)
+        item = {
+            "job_id": job.job_id, "job_type": job.job_type,
+            "payload": json.dumps(job.payload, separators=(",", ":")),
+            "status": job.status.value,
+            "created_at": job.created_at.isoformat(),
+            "updated_at": job.updated_at.isoformat(),
+        }
+        if job.result_run_id:
+            item["result_run_id"] = job.result_run_id
+        if job.error:
+            item["error"] = job.error
+        self.client.put_item(Item=item)
+        return job
