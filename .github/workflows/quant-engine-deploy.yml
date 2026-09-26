@@ -24,11 +24,12 @@ jobs:
 
       - name: Ensure infrastructure exists
         run: |
+          aws cloudformation validate-template --template-body file://infra/quant-engine-stack.yml
           aws cloudformation deploy \
             --template-file infra/quant-engine-stack.yml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides DesiredCount=0 WorkerDesiredCount=1
+            --parameter-overrides ContainerImage=public.ecr.aws/docker/library/python:3.12-slim DesiredCount=0 WorkerDesiredCount=1
 
       - name: Resolve ECR repository
         id: ecr
