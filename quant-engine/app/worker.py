@@ -5,6 +5,7 @@ from .strategy_backtest import run_strategy_backtest
 from .models import BacktestRequest
 from .s3_results import S3ResultStore
 from .jobs import JobStatus
+from .data_store import resolve_bars
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def execute_job(message: dict, result_store: S3ResultStore, job_store=None) -> s
         job_type = message["job_type"]
         if job_type != "backtest":
             raise ValueError(f"unsupported job_type: {job_type}")
-        request = BacktestRequest.model_validate(message["payload"])
+        request = resolve_bars(BacktestRequest.model_validate(message["payload"]))
         result = run_strategy_backtest(request)
         result_key = result_store.put(result)
         if job_store is not None:
