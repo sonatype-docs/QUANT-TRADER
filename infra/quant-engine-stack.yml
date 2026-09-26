@@ -10,6 +10,17 @@ Parameters:
     Default: 0
     MinValue: 0
     MaxValue: 4
+  WorkerDesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 0
+    MaxValue: 4
+  BedrockModelArn:
+    Type: String
+    Default: '*'
+  BedrockModelArn:
+    Type: String
+    Default: '*'
 
 Resources:
   QuantUserPool:
@@ -375,7 +386,7 @@ Resources:
         - Name: quant-engine-worker
           Image: !Ref ContainerImage
           Essential: true
-          Command: ["python", "-m", "quant_engine.app.worker_main"]
+          Command: ["python", "-m", "app.worker_main"]
           Environment:
             - Name: RESEARCH_QUEUE_URL
               Value: !Ref ResearchQueue
@@ -394,7 +405,7 @@ Resources:
     Type: AWS::ECS::Service
     Properties:
       Cluster: !Ref ECSCluster
-      DesiredCount: 0
+      DesiredCount: !Ref WorkerDesiredCount
       LaunchType: FARGATE
       TaskDefinition: !Ref WorkerTaskDefinition
       NetworkConfiguration:
