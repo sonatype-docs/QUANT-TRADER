@@ -45,6 +45,8 @@ class MainActivity : ComponentActivity() {
                     isDarkTheme = isDarkTheme,
                     auth = cognitoAuth,
                     authVersion = authVersion,
+                    onLogin = { cognitoAuth.startLogin(this@MainActivity) { } },
+                    onLogout = { cognitoAuth.logout() },
                     onToggleTheme = { isDarkTheme = !isDarkTheme }
                 )
             }
@@ -65,7 +67,9 @@ fun QuantKitApp(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     auth: CognitoAuthManager,
-    authVersion: Int
+    authVersion: Int,
+    onLogin: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val colors = LocalQuantKitColors.current
     var selectedTab by remember { mutableStateOf(QuantKitTab.BOTS) }
@@ -140,8 +144,8 @@ fun QuantKitApp(
                             onToggleTheme = onToggleTheme,
                             auth = auth,
                             authVersion = authVersion,
-                            onLogin = { cognitoAuth -> cognitoAuth.startLogin(this@MainActivity) { } },
-                            onLogout = { auth.logout() }
+                            onLogin = onLogin,
+                            onLogout = onLogout
                         )
                     }
                 }
