@@ -16,3 +16,14 @@ Next phases:
 4. L2/order-flow ingestion and event-driven execution simulation.
 5. SQS plus ECS/Batch for long research jobs.
 6. Authentication and production observability.
+
+
+## Phase 2 capabilities
+
+- Canonical OHLCV validation and Parquet read/write.
+- Local and S3 dataset-store boundaries using the same interface.
+- Dataset/request SHA-256 fingerprints on every backtest result.
+- Explicit strategy registry for the eight catalogue strategy IDs. The registry is a migration contract; it does not claim that all eight strategies are fully implemented yet.
+- Parameter sweeps and walk-forward out-of-sample windows.
+- PostgreSQL schema for durable research-run metadata.
+- JSON-safe metrics; infinite profit factor is represented as null when there are wins but no losses.

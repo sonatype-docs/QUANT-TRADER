@@ -43,7 +43,7 @@ class BacktestMetrics(BaseModel):
     annualized_return_pct: float
     sharpe: float
     sortino: float
-    profit_factor: float
+    profit_factor: float | None
     max_drawdown_pct: float
     win_rate_pct: float
     expectancy: float
@@ -57,3 +57,6 @@ class BacktestResult(BaseModel):
     metrics: BacktestMetrics
     equity_curve: list[float]
     trades: list[Trade]
+    engine_version: str
+    request_fingerprint: str
+    dataset_fingerprint: str

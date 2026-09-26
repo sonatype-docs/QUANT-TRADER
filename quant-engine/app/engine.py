@@ -4,6 +4,7 @@ from uuid import uuid4
 import math
 import numpy as np
 from .models import BacktestRequest, BacktestResult, BacktestMetrics, Side, Trade
+from .provenance import ENGINE_VERSION, request_fingerprint, dataset_fingerprint
 
 def _safe_sharpe(returns):
     if len(returns) < 2 or float(np.std(returns, ddof=1)) == 0:
@@ -78,7 +79,7 @@ def run_backtest(request: BacktestRequest) -> BacktestResult:
     returns = np.diff(curve) / np.maximum(curve[:-1], 1e-12)
     wins = [t.net_pnl for t in trades if t.net_pnl > 0]
     losses = [t.net_pnl for t in trades if t.net_pnl < 0]
-    profit_factor = float(sum(wins) / abs(sum(losses))) if losses else (float("inf") if wins else 0.0)
+    profit_factor = float(sum(wins) / abs(sum(losses))) if losses else (None if wins else 0.0)
     win_rate = float(len(wins) / len(trades) * 100.0) if trades else 0.0
     expectancy = float(np.mean([t.net_pnl for t in trades])) if trades else 0.0
     years = max((bars[-1].timestamp - bars[0].timestamp).total_seconds() / (365.25 * 86400), 1 / 365.25)
@@ -92,4 +93,6 @@ def run_backtest(request: BacktestRequest) -> BacktestResult:
             sortino=_safe_sortino(returns), profit_factor=profit_factor,
             max_drawdown_pct=_max_drawdown(curve), win_rate_pct=win_rate,
             expectancy=expectancy, trade_count=len(trades)),
-        equity_curve=[float(x) for x in curve], trades=trades)
+        equity_curve=[float(x) for x in curve], trades=trades,
+        engine_version=ENGINE_VERSION, request_fingerprint=request_fingerprint(request),
+        dataset_fingerprint=dataset_fingerprint(request))
