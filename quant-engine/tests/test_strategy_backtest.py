@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.strategy_backtest import run_strategy_backtest
+from app.strategy_backtest import run_strategy_backtest
 
 def test_strategy_backtest_uses_strategy_id():
     request = sample_request().model_copy(update={
