@@ -69,6 +69,10 @@ def create_walk_forward(
 def create_research_job(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
     job = _job_store().create("backtest", request.model_dump(mode="json"))
+    if os.getenv("RESEARCH_QUEUE_URL"):
+        from .research_dispatch import ResearchDispatcher
+        message_id = ResearchDispatcher().dispatch(job)
+        return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at, "message_id": message_id}
     return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at}
 
 @app.get("/v1/research/jobs/{job_id}")
