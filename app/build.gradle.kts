@@ -61,6 +61,12 @@ android {
   defaultConfig {
     buildConfigField("String", "QUANT_ENGINE_BASE_URL", "\"" + quantEngineBaseUrl + "\"")
   }
+  val cognitoIssuer = System.getenv("COGNITO_ISSUER") ?: ""
+  val cognitoClientId = System.getenv("COGNITO_APP_CLIENT_ID") ?: ""
+  defaultConfig {
+    buildConfigField("String", "COGNITO_ISSUER", "\""+ cognitoIssuer +"\"")
+    buildConfigField("String", "COGNITO_APP_CLIENT_ID", "\""+ cognitoClientId +"\"")
+  }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {
     includeInApk = false
@@ -122,6 +128,8 @@ dependencies {
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
+  implementation(libs.appauth)
+  implementation(libs.androidx.security.crypto)
   // implementation(libs.play.services.location)
   implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)

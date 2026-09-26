@@ -41,7 +41,7 @@ Resources:
   QuantUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Ref CognitoDomainPrefix
+      Domain: !Sub "${AWS::StackName}-${AWS::AccountId}"
       UserPoolId: !Ref QuantUserPool
 
   DataBucket:
@@ -411,4 +411,4 @@ Outputs:
   CognitoAppClientId:
     Value: !Ref QuantUserPoolClient
   CognitoDomain:
-    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+    Value: !Sub "https://${AWS::StackName}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com"
