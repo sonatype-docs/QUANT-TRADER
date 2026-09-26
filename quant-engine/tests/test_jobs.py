@@ -1,4 +1,4 @@
-from quant_engine.app.jobs import InMemoryJobStore, JobStatus
+from app.jobs import InMemoryJobStore, JobStatus
 
 def test_job_lifecycle_store():
     store = InMemoryJobStore()
