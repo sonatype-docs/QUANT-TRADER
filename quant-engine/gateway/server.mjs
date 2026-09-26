@@ -5,9 +5,16 @@ import got from "got";
 const PORT = Number(process.env.PORT || 8080);
 const RESEARCH_URL = process.env.RESEARCH_URL || "http://127.0.0.1:8081";
 const QUANT_ENGINE_API_KEY = process.env.QUANT_ENGINE_API_KEY || "";
-const ALPACA_BASE_URL = (process.env.ALPACA_BASE_URL || "https://paper-api.alpaca.markets").replace(/\/$/, "");
-const ALPACA_API_KEY = process.env.ALPACA_API_KEY || "";
-const ALPACA_API_SECRET = process.env.ALPACA_API_SECRET || "";
+function alpacaConfig() {
+  if (!process.env.ALPACA_CONFIG) return {};
+  try { return JSON.parse(process.env.ALPACA_CONFIG); }
+  catch { return {}; }
+}
+
+const alpaca = alpacaConfig();
+const ALPACA_BASE_URL = (alpaca.base_url || "https://paper-api.alpaca.markets").replace(/\/$/, "");
+const ALPACA_API_KEY = alpaca.api_key || "";
+const ALPACA_API_SECRET = alpaca.api_secret || "";
 const PAPER_HOST = "paper-api.alpaca.markets";
 const MAX_BODY_BYTES = 256 * 1024;
 
