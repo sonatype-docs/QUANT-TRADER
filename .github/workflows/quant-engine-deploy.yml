@@ -28,7 +28,7 @@ jobs:
             --template-file infra/quant-engine-stack.yml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides DesiredCount=0
+            --parameter-overrides DesiredCount=0 WorkerDesiredCount=1
 
       - name: Resolve ECR repository
         id: ecr
@@ -52,7 +52,7 @@ jobs:
             --template-file infra/quant-engine-stack.yml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides ContainerImage="$ECR_URI:${GITHUB_SHA}" DesiredCount=1
+            --parameter-overrides ContainerImage="$ECR_URI:${GITHUB_SHA}" DesiredCount=1 WorkerDesiredCount=1
 
       - name: Smoke test
         run: |

@@ -1,29 +1,51 @@
 from __future__ import annotations
+import json
 import logging
 from .strategy_backtest import run_strategy_backtest
 from .models import BacktestRequest
 from .s3_results import S3ResultStore
+from .jobs import JobStatus
 
 logger = logging.getLogger(__name__)
 
-def execute_job(message: dict, result_store: S3ResultStore) -> str:
-    job_type = message["job_type"]
-    if job_type != "backtest":
-        raise ValueError(f"unsupported job_type: {job_type}")
-    request = BacktestRequest.model_validate(message["payload"])
-    result = run_strategy_backtest(request)
-    return result_store.put(result)
+def execute_job(message: dict, result_store: S3ResultStore, job_store=None) -> str:
+    job_id = message["job_id"]
+    if job_store is not None:
+        job = job_store.get(job_id)
+        if job is None:
+            raise ValueError(f"research job not found: {job_id}")
+        job_store.update(job, status=JobStatus.RUNNING, error=None)
 
-def run_worker(queue, result_store, poll_seconds: int = 10) -> None:
+    try:
+        job_type = message["job_type"]
+        if job_type != "backtest":
+            raise ValueError(f"unsupported job_type: {job_type}")
+        request = BacktestRequest.model_validate(message["payload"])
+        result = run_strategy_backtest(request)
+        result_key = result_store.put(result)
+        if job_store is not None:
+            job_store.update(
+                job,
+                status=JobStatus.SUCCEEDED,
+                result_run_id=result.run_id,
+                result_s3_key=result_key,
+                error=None,
+            )
+        return result_key
+    except Exception as exc:
+        if job_store is not None:
+            job_store.update(job, status=JobStatus.FAILED, error=str(exc))
+        raise
+
+def run_worker(queue, result_store, job_store=None) -> None:
     while True:
         messages = queue.receive(10)
         if not messages:
             continue
         for message in messages:
             try:
-                import json
                 body = json.loads(message["Body"])
-                execute_job(body, result_store)
+                execute_job(body, result_store, job_store)
                 queue.delete(message["ReceiptHandle"])
             except Exception:
                 logger.exception("research job failed; leaving message for retry/DLQ")

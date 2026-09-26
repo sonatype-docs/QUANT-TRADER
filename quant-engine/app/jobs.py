@@ -18,6 +18,7 @@ class ResearchJob:
     payload: dict[str, Any]
     status: JobStatus = JobStatus.QUEUED
     result_run_id: str | None = None
+    result_s3_key: str | None = None
     error: str | None = None
     created_at: datetime = None
     updated_at: datetime = None

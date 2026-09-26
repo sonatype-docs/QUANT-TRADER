@@ -15,7 +15,7 @@ def _job_store():
         return DynamoJobStore()
     return _JOBS
 
-app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.2.0")
+app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.3.0")
 _RESULTS = {}
 
 def _require_api_key(api_key: str | None):
@@ -52,7 +52,6 @@ def get_backtest(run_id: str, x_api_key: str | None = Header(default=None)):
         raise HTTPException(status_code=404, detail="Backtest run not found")
     return result
 
-
 @app.post("/v1/research/sweeps")
 def create_sweep(request: BacktestRequest, parameter_grid: dict[str, list[float]], x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
@@ -71,7 +70,6 @@ def create_walk_forward(
     get_strategy(request.strategy_id)
     return walk_forward(request, train_bars, test_bars, step_bars)
 
-
 @app.post("/v1/research/jobs", status_code=202)
 def create_research_job(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
@@ -89,3 +87,17 @@ def get_research_job(job_id: str, x_api_key: str | None = Header(default=None)):
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
     return job
+
+@app.get("/v1/research/jobs/{job_id}/result")
+def get_research_job_result(job_id: str, x_api_key: str | None = Header(default=None)):
+    _require_api_key(x_api_key)
+    job = _job_store().get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    if job.status != "SUCCEEDED" or not job.result_s3_key:
+        raise HTTPException(status_code=409, detail="research result is not ready")
+    from .s3_results import S3ResultStore
+    bucket = os.getenv("RESEARCH_RESULTS_BUCKET") or os.getenv("QUANT_DATA_BUCKET")
+    if not bucket:
+        raise HTTPException(status_code=503, detail="research result bucket is not configured")
+    return S3ResultStore(bucket).get(job.result_s3_key)
