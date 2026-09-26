@@ -42,6 +42,7 @@ Resources:
   AlpacaTradingSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
+      Name: quant-trader/alpaca-paper
       Description: QUANT-TRADER Alpaca paper trading configuration. Populate JSON keys api_key, api_secret, and optional base_url.
 
   ResearchQueue:
