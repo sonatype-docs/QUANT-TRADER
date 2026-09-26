@@ -39,10 +39,20 @@ Resources:
         PasswordLength: 48
         ExcludePunctuation: true
 
+  ResearchDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-research-dlq"
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
   ResearchQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 900
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ResearchDLQ.Arn
+        maxReceiveCount: 4
       MessageRetentionPeriod: 345600
       SqsManagedSseEnabled: true
 

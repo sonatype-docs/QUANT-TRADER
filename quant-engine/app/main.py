@@ -6,6 +6,7 @@ from .models import BacktestRequest, BacktestResult
 from .research import parameter_sweep, walk_forward
 from .strategy_registry import get_strategy, list_strategies
 from .strategy_backtest import run_strategy_backtest
+from .jobs import InMemoryJobStore
 
 app = FastAPI(title="QUANT-TRADER Quant Engine", version="0.2.0")
 _RESULTS = {}
@@ -62,3 +63,18 @@ def create_walk_forward(
     _require_api_key(x_api_key)
     get_strategy(request.strategy_id)
     return walk_forward(request, train_bars, test_bars, step_bars)
+
+
+@app.post("/v1/research/jobs", status_code=202)
+def create_research_job(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
+    _require_api_key(x_api_key)
+    job = _JOBS.create("backtest", request.model_dump(mode="json"))
+    return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at}
+
+@app.get("/v1/research/jobs/{job_id}")
+def get_research_job(job_id: str, x_api_key: str | None = Header(default=None)):
+    _require_api_key(x_api_key)
+    job = _JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    return job
