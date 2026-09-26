@@ -68,13 +68,13 @@ def create_walk_forward(
 @app.post("/v1/research/jobs", status_code=202)
 def create_research_job(request: BacktestRequest, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
-    job = _JOBS.create("backtest", request.model_dump(mode="json"))
+    job = _job_store().create("backtest", request.model_dump(mode="json"))
     return {"job_id": job.job_id, "status": job.status, "created_at": job.created_at}
 
 @app.get("/v1/research/jobs/{job_id}")
 def get_research_job(job_id: str, x_api_key: str | None = Header(default=None)):
     _require_api_key(x_api_key)
-    job = _JOBS.get(job_id)
+    job = _job_store().get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
     return job
