@@ -1,4 +1,4 @@
-from quant_engine.app.analysis_pipeline import AnalysisRequest, AnalystOutput, RiskSynthesis, TradePlan
+from app.analysis_pipeline import AnalysisRequest, AnalystOutput, RiskSynthesis, TradePlan
 
 def test_analysis_request_accepts_research_contexts():
     request = AnalysisRequest(symbol="BTCUSDT", market_context="macro", sentiment_context="news", technical_context="trend", quant_context="sharpe")

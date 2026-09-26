@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.storage import LocalDatasetStore
+from app.storage import LocalDatasetStore
 
 def test_local_dataset_store_round_trip(tmp_path):
     request = sample_request()

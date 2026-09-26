@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.data import bars_to_frame, frame_to_bars
+from app.data import bars_to_frame, frame_to_bars
 
 def test_bar_round_trip():
     bars = sample_request().bars

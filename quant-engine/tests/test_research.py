@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.research import parameter_sweep, walk_forward
+from app.research import parameter_sweep, walk_forward
 
 def test_parameter_sweep_returns_every_combination():
     request = sample_request().model_copy(update={"strategy_id": "STRAT-02-TURTLE-DONCHIAN", "bars": sample_request().bars * 2})
@@ -21,7 +21,7 @@ def test_walk_forward_creates_out_of_sample_windows_with_strategy_engine():
     assert all(window.test_end > window.test_start for window in windows)
     assert all(window.result.strategy_id == "STRAT-02-TURTLE-DONCHIAN" for window in windows)
 
-from quant_engine.app.data_store import resolve_bars
+from app.data_store import resolve_bars
 
 def test_inline_bars_remain_supported_for_research():
     request = sample_request()

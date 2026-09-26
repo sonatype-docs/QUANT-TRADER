@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.pair_strategy import cointegration_signal, hedge_ratio
+from app.pair_strategy import cointegration_signal, hedge_ratio
 
 def test_hedge_ratio_is_ols_slope():
     x = [10, 11, 12, 13]

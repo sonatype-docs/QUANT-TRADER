@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from quant_engine.app.main import app
+from app.main import app
 from ._helpers import sample_request
 
 def test_health():

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
-from quant_engine.app.models import Bar
-from quant_engine.app.strategy_rules import (
+from app.models import Bar
+from app.strategy_rules import (
     london_orb, turtle_donchian, vwap_reversion, dual_momentum,
 )
 

@@ -1,5 +1,5 @@
 from ._helpers import sample_request
-from quant_engine.app.engine import run_backtest
+from app.engine import run_backtest
 
 def test_backtest_is_reproducible_shape():
     request = sample_request()
