@@ -53,6 +53,24 @@ object QuantEngineClient {
         }
     }
 
+    suspend fun getJobResult(auth: CognitoAuthManager, jobId: String): Result<JSONObject> = withContext(Dispatchers.IO) {
+        val token = auth.accessToken() ?: return@withContext Result.failure(IllegalStateException("Sign in required"))
+        try {
+            val request = Request.Builder()
+                .url(BuildConfig.QUANT_ENGINE_BASE_URL.trimEnd('/') + "/v1/research/jobs/" + jobId + "/result")
+                .addHeader("Authorization", "Bearer " + token)
+                .get()
+                .build()
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string().orEmpty()
+                if (!response.isSuccessful) return@withContext Result.failure(IllegalStateException("HTTP " + response.code + ": " + responseBody))
+                Result.success(JSONObject(responseBody))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getJob(auth: CognitoAuthManager, jobId: String): Result<ResearchJobStatus> = withContext(Dispatchers.IO) {
         val token = auth.accessToken() ?: return@withContext Result.failure(IllegalStateException("Sign in required"))
         try {
