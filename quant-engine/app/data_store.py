@@ -9,6 +9,7 @@ import boto3
 import pandas as pd
 
 from .models import Bar, BacktestRequest
+from .dataset_manifest import REQUIRED_COLUMNS
 
 REQUIRED_COLUMNS = ("timestamp", "open", "high", "low", "close", "volume")
 
