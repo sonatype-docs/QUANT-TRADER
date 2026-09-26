@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,18 +31,31 @@ import com.example.ui.theme.LocalQuantKitColors
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var cognitoAuth: CognitoAuthManager
+    private var authVersion by mutableStateOf(0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        cognitoAuth = CognitoAuthManager(this)
         setContent {
             var isDarkTheme by remember { mutableStateOf(true) }
 
             MyApplicationTheme(darkTheme = isDarkTheme) {
                 QuantKitApp(
                     isDarkTheme = isDarkTheme,
+                    auth = cognitoAuth,
+                    authVersion = authVersion,
                     onToggleTheme = { isDarkTheme = !isDarkTheme }
                 )
             }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CognitoAuthManager.REQUEST_CODE) {
+            cognitoAuth.handleAuthorizationResult(data)
+            authVersion++
         }
     }
 }
@@ -49,7 +63,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QuantKitApp(
     isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    auth: CognitoAuthManager,
+    authVersion: Int
 ) {
     val colors = LocalQuantKitColors.current
     var selectedTab by remember { mutableStateOf(QuantKitTab.BOTS) }
@@ -121,7 +137,11 @@ fun QuantKitApp(
                     }
                     QuantKitTab.RESEARCH -> {
                         QuantResearchScreen(
-                            onToggleTheme = onToggleTheme
+                            onToggleTheme = onToggleTheme,
+                            auth = auth,
+                            authVersion = authVersion,
+                            onLogin = { cognitoAuth -> cognitoAuth.startLogin(this@MainActivity) { } },
+                            onLogout = { auth.logout() }
                         )
                     }
                 }
