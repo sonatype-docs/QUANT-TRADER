@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from quant_engine.app.models import BacktestRequest, Bar
+from app.models import BacktestRequest, Bar
 
 def sample_request():
     start = datetime(2025, 1, 1, tzinfo=timezone.utc)
