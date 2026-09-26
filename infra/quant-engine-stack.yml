@@ -381,6 +381,8 @@ Resources:
               Value: !Ref ResearchQueue
             - Name: RESEARCH_RESULTS_BUCKET
               Value: !Ref DataBucket
+            - Name: BEDROCK_MODEL_ID
+              Value: global.anthropic.claude-sonnet-4-6
           LogConfiguration:
             LogDriver: awslogs
             Options:
