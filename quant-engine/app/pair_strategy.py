@@ -16,9 +16,9 @@ def hedge_ratio(x: list[float], y: list[float]) -> float:
         raise ValueError("paired series must have equal length >= 3")
     x_mean, y_mean = mean(x), mean(y)
     covariance = sum((a-x_mean)*(b-y_mean) for a,b in zip(x,y))
-    variance = sum((a-x_mean)**2 for a in x)
+    variance = sum((b-y_mean)**2 for b in y)
     if variance == 0:
-        raise ValueError("reference series has zero variance")
+        raise ValueError("hedge series has zero variance")
     return covariance / variance
 
 def spread_zscore(x: list[float], y: list[float], window: int = 30) -> tuple[float, float]:
