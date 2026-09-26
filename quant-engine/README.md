@@ -27,3 +27,9 @@ Next phases:
 - Parameter sweeps and walk-forward out-of-sample windows.
 - PostgreSQL schema for durable research-run metadata.
 - JSON-safe metrics; infinite profit factor is represented as null when there are wins but no losses.
+
+## Phase 11 analyst pipeline
+
+The research worker can now run a structured five-stage Bedrock analysis job: market-research analyst, sentiment analyst, and technical analyst execute in parallel; risk synthesis and trade-plan synthesis then reconcile their outputs. The pipeline uses Bedrock Converse structured JSON output, explicit token limits, adaptive retries, and persists the result in S3 through the same durable job lifecycle.
+
+The model is configured with BEDROCK_MODEL_ID. The infrastructure currently defaults to a global Claude Sonnet 4.6 inference profile ID; verify model access and IAM scope before production use.
