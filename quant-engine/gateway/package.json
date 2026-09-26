@@ -1,0 +1,7 @@
+{
+  "name": "quant-trader-alpaca-gateway",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "dependencies": { "got": "16.0.0" }
+}

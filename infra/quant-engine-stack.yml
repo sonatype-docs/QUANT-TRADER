@@ -39,6 +39,11 @@ Resources:
         PasswordLength: 48
         ExcludePunctuation: true
 
+  AlpacaTradingSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: QUANT-TRADER Alpaca paper trading configuration. Populate JSON keys api_key, api_secret, and optional base_url.
+
   ResearchQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -192,7 +197,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: secretsmanager:GetSecretValue
-                Resource: !Ref QuantEngineSecret
+                Resource:
+                  - !Ref QuantEngineSecret
+                  - !Ref AlpacaTradingSecret
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -247,9 +254,13 @@ Resources:
               Value: !Ref DataBucket
             - Name: RESEARCH_QUEUE_URL
               Value: !Ref ResearchQueue
+            - Name: RESEARCH_URL
+              Value: http://127.0.0.1:8081
           Secrets:
             - Name: QUANT_ENGINE_API_KEY
               ValueFrom: !Join ['', [!Ref QuantEngineSecret, ':api_key::']]
+            - Name: ALPACA_CONFIG
+              ValueFrom: !Ref AlpacaTradingSecret
           LogConfiguration:
             LogDriver: awslogs
             Options:
