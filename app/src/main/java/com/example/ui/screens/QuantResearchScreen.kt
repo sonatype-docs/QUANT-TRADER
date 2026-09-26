@@ -60,6 +60,7 @@ fun QuantResearchScreen(
     var health by remember { mutableStateOf(QuantEngineHealth(false, message = "Checking backend...")) }
     var jobId by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<ResearchJobStatus?>(null) }
+    var result by remember { mutableStateOf<org.json.JSONObject?>(null) }
     var actionMessage by remember { mutableStateOf("") }
 
     suspend fun refresh() { health = QuantEngineClient.health() }
@@ -73,7 +74,7 @@ fun QuantResearchScreen(
         val id = jobId ?: return@LaunchedEffect
         while (true) {
             QuantEngineClient.getJob(auth, id).onSuccess { job = it }.onFailure { actionMessage = it.message ?: "Job status failed" }
-            if (job?.status == "SUCCEEDED" || job?.status == "FAILED") break
+            if (job?.status == "SUCCEEDED") {\n                QuantEngineClient.getJobResult(auth, id).onSuccess { result = it }\n                    .onFailure { actionMessage = it.message ?: "Result retrieval failed" }\n                break\n            }\n            if (job?.status == "FAILED") break
             delay(2_000)
         }
     }
@@ -119,14 +120,14 @@ fun QuantResearchScreen(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (auth.isAuthorized()) {
-                    Button(onClick = { onLogout(); jobId = null; job = null }, colors = ButtonDefaults.buttonColors(containerColor = colors.container)) {
+                    Button(onClick = { onLogout(); jobId = null; job = null; result = null }, colors = ButtonDefaults.buttonColors(containerColor = colors.container)) {
                         Text("SIGN OUT", color = colors.textPrimary, fontSize = 10.sp)
                     }
                     Button(onClick = {
                         scope.launch {
                             actionMessage = "Submitting asynchronous backtest..."
                             QuantEngineClient.createSampleBacktest(auth)
-                                .onSuccess { id -> jobId = id; job = null; actionMessage = "Queued " + id }
+                                .onSuccess { id -> jobId = id; job = null; result = null; actionMessage = "Queued " + id }
                                 .onFailure { actionMessage = it.message ?: "Submission failed" }
                         }
                     }, colors = ButtonDefaults.buttonColors(containerColor = SunsetOrange)) {
@@ -147,6 +148,17 @@ fun QuantResearchScreen(
             if (!job?.error.isNullOrBlank()) Text("Error: " + job?.error, color = PnlNegative, fontSize = 11.sp)
             if (actionMessage.isNotBlank()) Text(actionMessage, color = colors.textSecondary, fontSize = 11.sp)
             Text("Pipeline: Android → Cognito → API → DynamoDB → SQS → ECS worker → S3 result.", color = colors.textSecondary, fontSize = 11.sp)
+            result?.let { json ->
+                val metrics = json.optJSONObject("metrics")
+                Text("RESULT READY • " + json.optString("strategy_id"), color = PnlPositive, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Return " + "%.2f".format(metrics?.optDouble("total_return_pct", 0.0)) +
+                        "% • Sharpe " + "%.2f".format(metrics?.optDouble("sharpe", 0.0)) +
+                        " • Max DD " + "%.2f".format(metrics?.optDouble("max_drawdown_pct", 0.0)) + "%",
+                    color = colors.textPrimary, fontSize = 11.sp, fontFamily = FontFamily.Monospace
+                )
+                Text("Trades: " + (metrics?.optInt("trade_count", 0) ?: 0) + " • Run: " + json.optString("run_id"), color = colors.textSecondary, fontSize = 10.sp)
+            }
         }
     }
 }
