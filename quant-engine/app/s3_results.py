@@ -25,3 +25,15 @@ class S3ResultStore:
     def get(self, key: str) -> dict:
         response = self.client.get_object(Bucket=self.bucket, Key=key)
         return json.loads(response["Body"].read())
+
+    def put_json(self, run_id: str, payload: dict, category: str = "analysis") -> str:
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        key = f"{self.prefix}/{category}/{now:%Y/%m/%d}/{run_id}.json"
+        self.client.put_object(
+            Bucket=self.bucket,
+            Key=key,
+            Body=json.dumps(payload, separators=(",", ":")).encode(),
+            ContentType="application/json",
+        )
+        return key
