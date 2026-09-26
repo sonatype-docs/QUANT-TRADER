@@ -1,5 +1,5 @@
-from quant_engine.app.orderflow import Aggressor, BookLevel, OrderBookSnapshot, OrderFlowCalculator, TradeTick
-from quant_engine.app.orderflow_strategy import Signal, evaluate
+from app.orderflow import Aggressor, BookLevel, OrderBookSnapshot, OrderFlowCalculator, TradeTick
+from app.orderflow_strategy import Signal, evaluate
 
 def test_orderflow_strategy_detects_sell_absorption():
     calc = OrderFlowCalculator()
