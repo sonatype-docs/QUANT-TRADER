@@ -12,6 +12,38 @@ Parameters:
     MaxValue: 4
 
 Resources:
+  QuantUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-users"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+
+  QuantUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref QuantUserPool
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email]
+      SupportedIdentityProviders: [COGNITO]
+      CallbackURLs: ["com.aistudio.quantkit.fx8w:/oauth2redirect"]
+      LogoutURLs: ["com.aistudio.quantkit.fx8w:/oauth2redirect"]
+
+  QuantUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomainPrefix
+      UserPoolId: !Ref QuantUserPool
+
   DataBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -279,6 +311,12 @@ Resources:
               Value: !Ref ResearchQueue
             - Name: RESEARCH_JOB_TABLE
               Value: !Ref ResearchJobTable
+            - Name: COGNITO_REGION
+              Value: !Ref AWS::Region
+            - Name: COGNITO_USER_POOL_ID
+              Value: !Ref QuantUserPool
+            - Name: COGNITO_APP_CLIENT_ID
+              Value: !Ref QuantUserPoolClient
           Secrets:
             - Name: QUANT_ENGINE_API_KEY
               ValueFrom: !Join ['', [!Ref QuantEngineSecret, ':api_key::']]
@@ -368,3 +406,9 @@ Outputs:
     Value: !GetAtt QuantEngineRepository.RepositoryUri
   ECSCluster:
     Value: !Ref ECSCluster
+  CognitoUserPoolId:
+    Value: !Ref QuantUserPool
+  CognitoAppClientId:
+    Value: !Ref QuantUserPoolClient
+  CognitoDomain:
+    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
