@@ -20,3 +20,17 @@ def test_walk_forward_creates_out_of_sample_windows_with_strategy_engine():
     assert windows
     assert all(window.test_end > window.test_start for window in windows)
     assert all(window.result.strategy_id == "STRAT-02-TURTLE-DONCHIAN" for window in windows)
+
+from quant_engine.app.data_store import resolve_bars
+
+def test_inline_bars_remain_supported_for_research():
+    request = sample_request()
+    assert len(resolve_bars(request).bars) >= 30
+
+def test_research_requires_bars_or_dataset_reference():
+    request = sample_request().model_copy(update={"bars": [], "dataset_s3_uri": None})
+    try:
+        resolve_bars(request)
+        assert False
+    except ValueError as exc:
+        assert "dataset_s3_uri" in str(exc)
