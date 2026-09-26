@@ -8,8 +8,7 @@ def test_orderflow_strategy_detects_sell_absorption():
         bids=(BookLevel(99.0, 2.0),),
         asks=(BookLevel(100.0, 10.0),),
     ))
-    # Positive delta, but trade does not advance price and offer depth dominates.
-    result = calc.trade(TradeTick(2, 100.0, 5.0, Aggressor.BUY))
+    calc.snapshot(OrderBookSnapshot(\n        timestamp_ms=2,\n        bids=(BookLevel(99.0, 2.0),),\n        asks=(BookLevel(101.0, 10.0),),\n    ))\n    # Positive delta, but price stalls while offer depth dominates.\n    result = calc.trade(TradeTick(3, 100.0, 5.0, Aggressor.BUY))
     signal = evaluate(result, imbalance_threshold=0.2)
     assert signal.signal == Signal.SHORT
 
